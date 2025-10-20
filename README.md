@@ -38,13 +38,45 @@ Each host has both message (`/message`) and health (`/health`) endpoints.
 *   **LLM-Based Word Replacement**: When modified, a random word in the message is selected and replaced with its opposite using the Ollama LLM API (gemma3:270m model)
 *   The service connects to an Ollama instance at `http://ollama:11434/api/generate`
 
-## OpenTelemetry Tracing
+## Datadog Tracing Integration
 
-The service is instrumented with OpenTelemetry. By default, it exports traces to the console (stdout), so you will see trace information in the logs when you run the service. This allows you to see the flow of a message across multiple service instances.
+This project utilizes Datadog's Go tracing library to monitor and analyze application performance. The integration includes:
 
-Each span in the trace contains attributes about the message being processed and events for when it's modified.
+- **Automatic Instrumentation:** HTTP handlers and database interactions are automatically instrumented using Datadog's contrib packages.
+- **Manual Instrumentation:** Custom spans are created in critical sections of the code to provide detailed insights.
 
-To use a different exporter (like Jaeger or Zipkin), you would modify the `newExporter` function in `main.go`.
+### Setup
+
+To enable Datadog tracing:
+
+1. **Install the Datadog Agent:**
+
+   Follow the [official Datadog documentation](https://docs.datadoghq.com/agent/) to install and configure the Datadog Agent on your host.
+
+2. **Set Environment Variables:**
+
+   Configure the following environment variables to enable Unified Service Tagging:
+
+   ```bash
+   export DD_ENV=production
+   export DD_SERVICE=dd-telephone
+   export DD_VERSION=0.1.0
+   ```
+
+   Replace `production`, `dd-telephone`, and `0.1.0` with your environment, service name, and version, respectively.
+
+3. **Run the Application:**
+
+   Start your application as usual. The Datadog tracer will automatically collect and send traces to the Datadog Agent.
+
+### Viewing Traces
+
+After running the application, you can view the collected traces in the Datadog APM dashboard:
+
+1. Log in to your [Datadog account](https://app.datadoghq.com/).
+2. Navigate to **APM > Traces** to explore the collected traces and performance metrics.
+
+For more detailed information on configuring and using Datadog's Go tracing library, refer to the [official documentation](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/).
 
 ## Running with Docker
 
