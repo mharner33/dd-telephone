@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/mharner33/telephone/hosts"
 	"github.com/mharner33/telephone/message"
+	"github.com/sirupsen/logrus"
 )
 
 // Using DataDog tracer from main.go
@@ -43,14 +43,18 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	if msg.ModifiedText == "" {
 		originalText = msg.OriginalText
 		modifiedText = message.Modify(ctx, msg.OriginalText)
-		log.Printf("First host - Original message: %s", originalText)
-		log.Printf("Modified message: %s", modifiedText)
+		logrus.WithFields(logrus.Fields{
+			"original_message": originalText,
+			"modified_message": modifiedText,
+		}).Info("First host - processing message")
 	} else {
 		originalText = msg.OriginalText
 		modifiedText = message.Modify(ctx, msg.ModifiedText)
-		log.Printf("Original message: %s", originalText)
-		log.Printf("Previous modified: %s", msg.ModifiedText)
-		log.Printf("New modified message: %s", modifiedText)
+		logrus.WithFields(logrus.Fields{
+			"original_message":     originalText,
+			"previous_modified":    msg.ModifiedText,
+			"new_modified_message": modifiedText,
+		}).Info("Processing message")
 	}
 
 	span.SetTag("original.message", originalText)
@@ -61,7 +65,7 @@ func MessageHandler(w http.ResponseWriter, r *http.Request) {
 	if nextServiceURL != "" {
 		go forwardMessage(ctx, originalText, modifiedText, nextServiceURL)
 	} else {
-		log.Println("End of the line. No NEXT_SERVICE_URL configured.")
+		logrus.Info("End of the line. No NEXT_SERVICE_URL configured.")
 	}
 
 	span.Finish()
@@ -79,14 +83,14 @@ func forwardMessage(ctx context.Context, originalText string, modifiedText strin
 	msg := Message{OriginalText: originalText, ModifiedText: modifiedText}
 	body, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshalling message: %v", err)
+		logrus.WithError(err).Error("Error marshalling message")
 		span.Finish(tracer.WithError(err))
 		return
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("Error creating request: %v", err)
+		logrus.WithError(err).Error("Error creating request")
 		span.Finish(tracer.WithError(err))
 		return
 	}
@@ -98,13 +102,16 @@ func forwardMessage(ctx context.Context, originalText string, modifiedText strin
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error forwarding message: %v", err)
+		logrus.WithError(err).Error("Error forwarding message")
 		span.Finish(tracer.WithError(err))
 		return
 	}
 	defer resp.Body.Close()
 
-	log.Printf("Forwarded message to %s, status: %s", url, resp.Status)
+	logrus.WithFields(logrus.Fields{
+		"url":    url,
+		"status": resp.Status,
+	}).Info("Forwarded message")
 	span.SetTag("forward.url", url)
 	span.SetTag("forward.status", resp.Status)
 	span.Finish()

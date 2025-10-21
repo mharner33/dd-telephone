@@ -2,20 +2,24 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	chitrace "github.com/DataDog/dd-trace-go/contrib/go-chi/chi/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/go-chi/chi/v5"
 	"github.com/mharner33/telephone/handlers"
 	"github.com/mharner33/telephone/message"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	// Set up logrus with JSON formatting
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
 	// CLI flag to select LLM provider (ollama or gemini). Default: gemini
 	llmProvider := flag.String("llm", "gemini", "LLM provider: 'ollama' or 'gemini'")
 	flag.Parse()
@@ -39,14 +43,17 @@ func main() {
 	// Select LLM backend based on flag
 	if *llmProvider == "ollama" {
 		message.SetUseOllama(true)
-		log.Println("Using LLM provider: ollama")
+		logrus.Info("Using LLM provider: ollama")
 	} else {
 		message.SetUseOllama(false)
-		log.Println("Using LLM provider: gemini")
+		logrus.Info("Using LLM provider: gemini")
 	}
 
 	// Create Chi router with API v1 base path
 	r := chi.NewRouter()
+
+	// Add DataDog tracing middleware
+	r.Use(chitrace.Middleware(chitrace.WithService("dd-telephone")))
 
 	// Group routes under /api/v1
 	r.Route("/api/v1", func(r chi.Router) {
@@ -68,8 +75,10 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Printf("Listening on port %s", port)
-	log.Fatal(server.ListenAndServe())
+	logrus.WithFields(logrus.Fields{
+		"port": port,
+	}).Info("Starting server")
+	logrus.Fatal(server.ListenAndServe())
 }
 
 // Removed local handlers; now using handlers package

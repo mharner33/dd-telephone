@@ -1,9 +1,10 @@
 package hosts
 
 import (
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 var hostsList = []string{"tele0", "tele1", "tele2", "tele3", "tele4"}
@@ -30,7 +31,7 @@ var hostHealthMap = map[string]string{
 func GetNextHost() string {
 	hostname, err := getHostnameFunc()
 	if err != nil {
-		log.Printf("Error getting hostname: %v", err)
+		logrus.WithError(err).Error("Error getting hostname")
 		return ""
 	}
 
@@ -44,7 +45,7 @@ func GetNextHost() string {
 
 	// If current hostname not found in array, start from 0
 	if currentIndex == -1 {
-		log.Printf("Hostname not found in array, starting from 0")
+		logrus.Info("Hostname not found in array, starting from 0")
 		currentIndex = -1
 
 	}
@@ -101,19 +102,25 @@ func GetNextHostHealth() bool {
 	nextHost := GetNextHost()
 	healthURL, exists := hostHealthMap[nextHost]
 	if !exists {
-		log.Printf("Health check failed for %s: host not found in health map", nextHost)
+		logrus.WithField("host", nextHost).Error("Health check failed: host not found in health map")
 		return false
 	}
 
 	resp, err := http.Get(healthURL)
 	if err != nil {
-		log.Printf("Health check failed for %s: %v", nextHost, err)
+		logrus.WithFields(logrus.Fields{
+			"host":  nextHost,
+			"error": err,
+		}).Error("Health check failed")
 		return false
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Health check failed for %s: status %d", nextHost, resp.StatusCode)
+		logrus.WithFields(logrus.Fields{
+			"host":        nextHost,
+			"status_code": resp.StatusCode,
+		}).Error("Health check failed")
 		return false
 	}
 

@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 
+	dd_logrus "github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/sirupsen/logrus"
 )
 
 // useOllama controls which LLM backend is used.
@@ -25,15 +26,16 @@ func SetUseOllama(v bool) {
 
 // Modify takes a text string, selects a random word, and replaces it with its opposite using LLM
 func Modify(ctx context.Context, text string) string {
+	logrus.AddHook(&dd_logrus.DDContextLogHook{})
 	// Only modify if coin flip is true
 	if !coinFlip() {
-		log.Println("No modifications were made")
+		logrus.WithContext(ctx).Info("No modifications were made")
 		return text
 	}
 
 	words := strings.Fields(text)
 	if len(words) == 0 {
-		log.Println("No modifications were made")
+		logrus.WithContext(ctx).Info("No modifications were made")
 		return text
 	}
 
@@ -56,11 +58,14 @@ func Modify(ctx context.Context, text string) string {
 	}
 	if err != nil {
 		// If error, return original text
-		log.Println("No modifications were made")
+		logrus.Info("No modifications were made")
 		return text
 	}
 
-	log.Printf("The word %s was changed to %s", selectedWord, oppositeWord)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		"original_word":    selectedWord,
+		"replacement_word": oppositeWord,
+	}).Info("Word replacement made")
 
 	// Replace the word
 	words[randomIndex] = oppositeWord
