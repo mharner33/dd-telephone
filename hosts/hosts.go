@@ -8,22 +8,22 @@ import (
 
 var hostsList = []string{"tele0", "tele1", "tele2", "tele3", "tele4"}
 var hostMsgMap = map[string]string{
-	"tele0": "http://tele0:8080/message",
-	"tele1": "http://tele1:8081/message",
-	"tele2": "http://tele2:8082/message",
-	"tele3": "http://tele3:8083/message",
-	"tele4": "http://tele4:8084/message",
+	"tele0": "http://tele0:8080/api/v1/message",
+	"tele1": "http://tele1:8081/api/v1/message",
+	"tele2": "http://tele2:8082/api/v1/message",
+	"tele3": "http://tele3:8083/api/v1/message",
+	"tele4": "http://tele4:8084/api/v1/message",
 }
 
 // Function variables for mocking in tests
 var getHostnameFunc = os.Hostname
 var checkHostHealthFunc = CheckHostHealth
 var hostHealthMap = map[string]string{
-	"tele0": "http://tele0:8080/health",
-	"tele1": "http://tele1:8081/health",
-	"tele2": "http://tele2:8082/health",
-	"tele3": "http://tele3:8083/health",
-	"tele4": "http://tele4:8084/health",
+	"tele0": "http://tele0:8080/api/v1/health",
+	"tele1": "http://tele1:8081/api/v1/health",
+	"tele2": "http://tele2:8082/api/v1/health",
+	"tele3": "http://tele3:8083/api/v1/health",
+	"tele4": "http://tele4:8084/api/v1/health",
 }
 
 // GetNextHost returns the next healthy host in the rotation
