@@ -2,7 +2,10 @@ module github.com/mharner33/telephone
 
 go 1.24.0
 
-require github.com/DataDog/dd-trace-go/v2 v2.3.0
+require (
+	github.com/DataDog/dd-trace-go/v2 v2.3.0
+	github.com/go-chi/chi/v5 v5.2.3
+)
 
 require (
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.67.0 // indirect

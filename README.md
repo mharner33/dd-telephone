@@ -4,11 +4,11 @@ This Go microservice emulates the "telephone game". It receives a message, rando
 
 ## Endpoints
 
-*   `POST /message`: Receives a JSON payload with a message, modifies it, and forwards it.
+*   `POST /api/v1/message`: Receives a JSON payload with a message, modifies it, and forwards it.
     *   Request body: `{"original_text": "your message here", "modified_text": ""}`
     *   For the first host in the chain, `modified_text` should be an empty string
     *   For subsequent hosts, `modified_text` contains the previously modified version
-*   `GET /health`: A health check endpoint. Returns `OK`.
+*   `GET /api/v1/health`: A health check endpoint. Returns `OK`.
 
 ## Configuration
 
@@ -30,7 +30,7 @@ The service automatically manages a chain of 5 hosts (tele0 through tele4) with 
 The service is pre-configured with the following hosts and their respective ports:
 - tele0:8080, tele1:8081, tele2:8082, tele3:8083, tele4:8084
 
-Each host has both message (`/message`) and health (`/health`) endpoints.
+Each host has both message (`/api/v1/message`) and health (`/api/v1/health`) endpoints.
 
 ## Message Processing
 
@@ -97,7 +97,7 @@ For more detailed information on configuring and using Datadog's Go tracing libr
     Send a message to it:
 
     ```bash
-    curl -X POST -d '{"original_text":"hello world","modified_text":""}' http://localhost:8080/message
+    curl -X POST -d '{"original_text":"hello world","modified_text":""}' http://localhost:8080/api/v1/message
     ```
 
     Check the logs:
@@ -121,7 +121,7 @@ For more detailed information on configuring and using Datadog's Go tracing libr
     Now, send a message to any service (e.g., tele0):
 
     ```bash
-    curl -X POST -d '{"original_text":"hello world","modified_text":""}' http://localhost:8080/message
+    curl -X POST -d '{"original_text":"hello world","modified_text":""}' http://localhost:8080/api/v1/message
     ```
 
     The message will automatically flow through the chain: tele0 → tele1 → tele2 → tele3 → tele4 → (stops)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/go-chi/chi/v5"
 	"github.com/mharner33/telephone/handlers"
 	"github.com/mharner33/telephone/message"
 )
@@ -44,8 +45,14 @@ func main() {
 		log.Println("Using LLM provider: gemini")
 	}
 
-	http.HandleFunc("/message", handlers.MessageHandler)
-	http.HandleFunc("/health", handlers.HealthHandler)
+	// Create Chi router with API v1 base path
+	r := chi.NewRouter()
+
+	// Group routes under /api/v1
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/message", handlers.MessageHandler)
+		r.Get("/health", handlers.HealthHandler)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -54,7 +61,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           nil,
+		Handler:           r,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
